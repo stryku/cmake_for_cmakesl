@@ -40,6 +40,7 @@ class cmOutputConverter;
 class cmSourceFile;
 class cmStateDirectory;
 class cmake;
+class ScriptExecutionStrategy;
 
 namespace detail {
 inline void AppendStrs(std::vector<std::string>&)
@@ -99,10 +100,14 @@ class cmGlobalGenerator
 {
 public:
   ///! Free any memory allocated with the GlobalGenerator
-  cmGlobalGenerator(cmake* cm);
+  cmGlobalGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecutionStrategy);
   virtual ~cmGlobalGenerator();
 
   virtual cmLocalGenerator* CreateLocalGenerator(cmMakefile* mf);
+    ScriptExecutionStrategy* GetScriptExecutionStrategy()
+        {
+              return ScriptExecution;
+            }
 
   ///! Get the name for this generator
   virtual std::string GetName() const { return "Generic"; }
@@ -273,6 +278,11 @@ public:
   }
 
   void AddMakefile(cmMakefile* mf);
+    void IndexMakefile(cmMakefile* mf); // Moved to public
+       void setConfigureDoneCMP0026AndCMP0024(bool isDone)
+        {
+               this->ConfigureDoneCMP0026AndCMP0024 = isDone;
+            }
 
   ///! Set an generator for an "external makefile based project"
   void SetExternalMakefileProjectGenerator(
@@ -650,7 +660,6 @@ private:
   bool CheckCMP0037(std::string const& targetName,
                     std::string const& reason) const;
 
-  void IndexMakefile(cmMakefile* mf);
   void IndexLocalGenerator(cmLocalGenerator* lg);
 
   virtual const char* GetBuildIgnoreErrorsFlag() const { return nullptr; }
@@ -679,6 +688,8 @@ private:
   // Pool of file locks
   cmFileLockPool FileLockPool;
 #endif
+
+    ScriptExecutionStrategy* ScriptExecution;
 
 protected:
   float FirstTimeProgress;

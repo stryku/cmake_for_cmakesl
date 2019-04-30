@@ -15,7 +15,7 @@ class cmake;
 class cmGlobalCommonGenerator : public cmGlobalGenerator
 {
 public:
-  cmGlobalCommonGenerator(cmake* cm);
+  cmGlobalCommonGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution);
   ~cmGlobalCommonGenerator() override;
 };
 

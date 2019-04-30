@@ -44,6 +44,7 @@
 #include "cmWorkingDirectory.h"
 #include "cm_sys_stat.h"
 #include "cmake.h"
+#include "OldScriptExecutionStrategy.hpp"
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
@@ -3411,8 +3412,10 @@ int cmMakefile::TryCompile(const std::string& srcdir,
   // make sure the same generator is used
   // use this program as the cmake to be run, it should not
   // be run that way but the cmake object requires a vailid path
+    OldScriptExecutionStrategy scriptExecutionStrategy;
   cmake cm(cmake::RoleProject, cmState::Project);
   cm.SetIsInTryCompile(true);
+    cm.SetScriptExecution(&scriptExecutionStrategy);
   cmGlobalGenerator* gg =
     cm.CreateGlobalGenerator(this->GetGlobalGenerator()->GetName());
   if (!gg) {

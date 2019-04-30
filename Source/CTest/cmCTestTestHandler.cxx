@@ -1680,7 +1680,7 @@ void cmCTestTestHandler::GetListOfTests()
   cm.SetHomeDirectory("");
   cm.SetHomeOutputDirectory("");
   cm.GetCurrentSnapshot().SetDefaultDefinitions();
-  cmGlobalGenerator gg(&cm);
+  cmGlobalGenerator gg(&cm, nullptr);
   cmMakefile mf(&gg, cm.GetCurrentSnapshot());
   mf.AddDefinition("CTEST_CONFIGURATION_TYPE",
                    this->CTest->GetConfigType().c_str());

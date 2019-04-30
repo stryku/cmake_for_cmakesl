@@ -24,7 +24,7 @@ struct cmDocumentationEntry;
 class cmGlobalWatcomWMakeGenerator : public cmGlobalUnixMakefileGenerator3
 {
 public:
-  cmGlobalWatcomWMakeGenerator(cmake* cm);
+  cmGlobalWatcomWMakeGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution);
   static cmGlobalGeneratorFactory* NewFactory()
   {
     return new cmGlobalGeneratorSimpleFactory<cmGlobalWatcomWMakeGenerator>();

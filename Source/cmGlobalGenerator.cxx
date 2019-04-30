@@ -1,6 +1,7 @@
 /* Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
    file Copyright.txt or https://cmake.org/licensing for details.  */
 #include "cmGlobalGenerator.h"
+#include "ScriptExecutionStrategy.hpp"
 
 #include "cmsys/Directory.hxx"
 #include "cmsys/FStream.hxx"
@@ -69,8 +70,9 @@ bool cmTarget::StrictTargetComparison::operator()(cmTarget const* t1,
   return nameResult < 0;
 }
 
-cmGlobalGenerator::cmGlobalGenerator(cmake* cm)
+cmGlobalGenerator::cmGlobalGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution)
   : CMakeInstance(cm)
+    , ScriptExecution(scriptExecution)
 {
   // By default the .SYMBOLIC dependency is not needed on symbolic rules.
   this->NeedSymbolicMark = false;
@@ -1166,20 +1168,24 @@ void cmGlobalGenerator::Configure()
   snapshot.GetDirectory().SetCurrentBinary(
     this->CMakeInstance->GetHomeOutputDirectory());
 
-  cmMakefile* dirMf = new cmMakefile(this, snapshot);
-  dirMf->SetRecursionDepth(this->RecursionDepth);
-  this->Makefiles.push_back(dirMf);
-  this->IndexMakefile(dirMf);
+    this->BinaryDirectories.insert(this->CMakeInstance->GetHomeOutputDirectory());
 
-  this->BinaryDirectories.insert(
-    this->CMakeInstance->GetHomeOutputDirectory());
+                ScriptExecution->execute(*this, snapshot);
 
-  // now do it
-  this->ConfigureDoneCMP0026AndCMP0024 = false;
-  dirMf->Configure();
-  dirMf->EnforceDirectoryLevelRules();
-
-  this->ConfigureDoneCMP0026AndCMP0024 = true;
+//  cmMakefile* dirMf = new cmMakefile(this, snapshot);
+//  dirMf->SetRecursionDepth(this->RecursionDepth);
+//  this->Makefiles.push_back(dirMf);
+//  this->IndexMakefile(dirMf);
+//
+//  this->BinaryDirectories.insert(
+//    this->CMakeInstance->GetHomeOutputDirectory());
+//
+//  // now do it
+//  this->ConfigureDoneCMP0026AndCMP0024 = false;
+//  dirMf->Configure();
+//  dirMf->EnforceDirectoryLevelRules();
+//
+//  this->ConfigureDoneCMP0026AndCMP0024 = true;
 
   // Put a copy of each global target in every directory.
   std::vector<GlobalTargetInfo> globalTargets;

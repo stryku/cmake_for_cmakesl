@@ -35,6 +35,7 @@
 #include "cmTargetDepend.h"
 #include "cmVersion.h"
 #include "cmake.h"
+#include "ScriptExecutionStrategy.hpp"
 
 class cmLinkLineComputer;
 
@@ -443,8 +444,8 @@ void cmGlobalNinjaGenerator::WriteDefault(std::ostream& os,
   os << "\n";
 }
 
-cmGlobalNinjaGenerator::cmGlobalNinjaGenerator(cmake* cm)
-  : cmGlobalCommonGenerator(cm)
+cmGlobalNinjaGenerator::cmGlobalNinjaGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution)
+  : cmGlobalCommonGenerator(cm, scriptExecution)
   , BuildFileStream(nullptr)
   , RulesFileStream(nullptr)
   , CompileCommandsStream(nullptr)

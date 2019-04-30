@@ -691,7 +691,7 @@ bool cmQtAutoGenerator::Run(std::string const& infoFile,
     cm.SetHomeOutputDirectory(InfoDir());
     cm.SetHomeDirectory(InfoDir());
     cm.GetCurrentSnapshot().SetDefaultDefinitions();
-    cmGlobalGenerator gg(&cm);
+    cmGlobalGenerator gg(&cm, nullptr);
 
     cmStateSnapshot snapshot = cm.GetCurrentSnapshot();
     snapshot.GetDirectory().SetCurrentBinary(InfoDir());

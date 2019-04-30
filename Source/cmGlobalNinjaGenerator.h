@@ -176,7 +176,7 @@ public:
   bool IsGCCOnWindows() const { return UsingGCCOnWindows; }
 
 public:
-  cmGlobalNinjaGenerator(cmake* cm);
+  cmGlobalNinjaGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution);
 
   static cmGlobalGeneratorFactory* NewFactory()
   {

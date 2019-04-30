@@ -210,7 +210,7 @@ int main(int argc, char const* const* argv)
   cminst.SetHomeOutputDirectory("");
   cminst.SetProgressCallback(cpackProgressCallback);
   cminst.GetCurrentSnapshot().SetDefaultDefinitions();
-  cmGlobalGenerator cmgg(&cminst);
+  cmGlobalGenerator cmgg(&cminst, nullptr);
   cmMakefile globalMF(&cmgg, cminst.GetCurrentSnapshot());
 #if defined(__CYGWIN__)
   globalMF.AddDefinition("CMAKE_LEGACY_CYGWIN_WIN32", "0");

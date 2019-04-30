@@ -5,12 +5,14 @@
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
+#include <memory>
 #include <string>
 #include <vector>
 
 class cmGlobalGenerator;
 class cmake;
 struct cmDocumentationEntry;
+class ScriptExecutionStrategy;
 
 /** \class cmGlobalGeneratorFactory
  * \brief Responable for creating cmGlobalGenerator instances
@@ -24,7 +26,7 @@ public:
 
   /** Create a GlobalGenerator */
   virtual cmGlobalGenerator* CreateGlobalGenerator(const std::string& n,
-                                                   cmake* cm) const = 0;
+                                                   cmake* cm, ScriptExecutionStrategy* scriptExecution) const = 0;
 
   /** Get the documentation entry for this factory */
   virtual void GetDocumentation(cmDocumentationEntry& entry) const = 0;
@@ -52,12 +54,13 @@ class cmGlobalGeneratorSimpleFactory : public cmGlobalGeneratorFactory
 public:
   /** Create a GlobalGenerator */
   cmGlobalGenerator* CreateGlobalGenerator(const std::string& name,
-                                           cmake* cm) const override
+                                           cmake* cm,
+                                               ScriptExecutionStrategy* scriptExecution) const override
   {
     if (name != T::GetActualName()) {
       return nullptr;
     }
-    return new T(cm);
+    return new T(cm, std::move(scriptExecution));
   }
 
   /** Get the documentation entry for this factory */

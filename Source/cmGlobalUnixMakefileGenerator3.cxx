@@ -23,9 +23,10 @@
 #include "cmSystemTools.h"
 #include "cmTargetDepend.h"
 #include "cmake.h"
+#include "ScriptExecutionStrategy.hpp"
 
-cmGlobalUnixMakefileGenerator3::cmGlobalUnixMakefileGenerator3(cmake* cm)
-  : cmGlobalCommonGenerator(cm)
+cmGlobalUnixMakefileGenerator3::cmGlobalUnixMakefileGenerator3(cmake* cm, ScriptExecutionStrategy* scriptExecution)
+  : cmGlobalCommonGenerator(cm, scriptExecution)
 {
   // This type of makefile always requires unix style paths
   this->ForceUnixPaths = true;

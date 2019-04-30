@@ -6,11 +6,12 @@
 #include "cmMakefile.h"
 #include "cmState.h"
 #include "cmake.h"
+#include "ScriptExecutionStrategy.hpp"
 
 #include <ostream>
 
-cmGlobalWatcomWMakeGenerator::cmGlobalWatcomWMakeGenerator(cmake* cm)
-  : cmGlobalUnixMakefileGenerator3(cm)
+cmGlobalWatcomWMakeGenerator::cmGlobalWatcomWMakeGenerator(cmake* cm, ScriptExecutionStrategy* scriptExecution)
+  : cmGlobalUnixMakefileGenerator3(cm, scriptExecution)
 {
   this->FindMakeProgramFile = "CMakeFindWMake.cmake";
 #ifdef _WIN32

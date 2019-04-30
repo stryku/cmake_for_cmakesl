@@ -276,7 +276,7 @@ void cmCTestScriptHandler::CreateCMake()
   this->CMake->SetHomeOutputDirectory("");
   this->CMake->GetCurrentSnapshot().SetDefaultDefinitions();
   this->CMake->AddCMakePaths();
-  this->GlobalGenerator = new cmGlobalGenerator(this->CMake);
+  this->GlobalGenerator = new cmGlobalGenerator(this->CMake, nullptr);
 
   cmStateSnapshot snapshot = this->CMake->GetCurrentSnapshot();
   std::string cwd = cmSystemTools::GetCurrentWorkingDirectory();

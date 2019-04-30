@@ -648,7 +648,18 @@ set(SRCS
 
   cmDuration.h
   cmDuration.cxx
+
+  cmakesl/facade/cmake_facade.hpp
+  CMakeFacade.cpp
+  CMakeFacade.hpp
+  ScriptExecutionStrategy.hpp
+  OldScriptExecutionStrategy.hpp
+  OldScriptExecutionStrategy.cpp
+  CMakeSLScriptExecutionStrategy.cpp
+  CMakeSLScriptExecutionStrategy.hpp
   )
+
+include_directories(cmakesl/facade)
 
 SET_PROPERTY(SOURCE cmProcessOutput.cxx APPEND PROPERTY COMPILE_DEFINITIONS
   KWSYS_ENCODING_DEFAULT_CODEPAGE=${KWSYS_ENCODING_DEFAULT_CODEPAGE})
@@ -797,8 +808,11 @@ foreach(check
     COMPILE_DEFINITIONS CMake_${check}=${CMake_${check}})
 endforeach()
 
+add_subdirectory(cmakesl)
+
 # create a library used by the command line and the GUI
 add_library(CMakeLib ${SRCS})
+target_include_directories(CMakeLib PRIVATE cmakesl/source)
 target_link_libraries(CMakeLib cmsys
   ${CMAKE_EXPAT_LIBRARIES} ${CMAKE_ZLIB_LIBRARIES}
   ${CMAKE_TAR_LIBRARIES} ${CMAKE_COMPRESS_LIBRARIES}
@@ -1072,7 +1086,7 @@ endif()
 # Build CMake executable
 add_executable(cmake cmakemain.cxx cmcmd.cxx cmcmd.h ${MANIFEST_FILE})
 list(APPEND _tools cmake)
-target_link_libraries(cmake CMakeLib)
+target_link_libraries(cmake CMakeLib exec errors)
 
 add_library(CMakeServerLib
   cmConnection.h cmConnection.cxx

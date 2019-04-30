@@ -433,7 +433,7 @@ int cmCTest::Initialize(const char* binary_dir, cmCTestStartCommand* command)
   cm.SetHomeDirectory("");
   cm.SetHomeOutputDirectory("");
   cm.GetCurrentSnapshot().SetDefaultDefinitions();
-  cmGlobalGenerator gg(&cm);
+  cmGlobalGenerator gg(&cm, nullptr);
   cmMakefile mf(&gg, cm.GetCurrentSnapshot());
   if (!this->ReadCustomConfigurationFileTree(this->BinaryDir.c_str(), &mf)) {
     cmCTestOptionalLog(

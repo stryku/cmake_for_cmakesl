@@ -60,7 +60,7 @@ struct cmDocumentationEntry;
 class cmGlobalUnixMakefileGenerator3 : public cmGlobalCommonGenerator
 {
 public:
-  cmGlobalUnixMakefileGenerator3(cmake* cm);
+  cmGlobalUnixMakefileGenerator3(cmake* cm, ScriptExecutionStrategy* scriptExecution);
   static cmGlobalGeneratorFactory* NewFactory()
   {
     return new cmGlobalGeneratorSimpleFactory<

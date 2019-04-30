@@ -33,6 +33,7 @@ class cmMakefile;
 class cmMessenger;
 class cmVariableWatch;
 struct cmDocumentationEntry;
+class ScriptExecutionStrategy;
 
 /** \brief Represents a cmake invocation.
  *
@@ -109,17 +110,28 @@ public:
   };
 
   typedef std::map<std::string, cmInstalledFile> InstalledFilesMap;
+  using ProgressCallbackType = std::function<void(const char*, float)>;
 
   static const int NO_BUILD_PARALLEL_LEVEL = -1;
   static const int DEFAULT_BUILD_PARALLEL_LEVEL = 0;
 
   /// Default constructor
   cmake(Role role, cmState::Mode mode);
+        cmake(Role role,
+            cmState::Mode mode,
+              const std::string& homeDirectory,
+              const std::string& homeOutputDirectory,
+              ProgressCallbackType progressCallback,
+              WorkingMode workingMode,
+              std::unique_ptr<ScriptExecutionStrategy> scriptExecution);
   /// Destructor
   ~cmake();
 
   cmake(cmake const&) = delete;
   cmake& operator=(cmake const&) = delete;
+
+int Execute(const std::vector<std::string>& commandLineArgs);
+    int GenerateStep();
 
 #if defined(CMAKE_BUILD_WITH_CMAKE)
   Json::Value ReportVersionJson() const;
@@ -185,6 +197,16 @@ public:
   const cmGlobalGenerator* GetGlobalGenerator() const
   {
     return this->GlobalGenerator;
+  }
+
+  void SetScriptExecution(ScriptExecutionStrategy* scriptExecution)
+  {
+    RawScriptExecution = scriptExecution;
+  }
+
+  ScriptExecutionStrategy* GetScriptExecution()
+  {
+    return ScriptExecution ? ScriptExecution.get() : RawScriptExecution;
   }
 
   ///! Return the full path to where the CMakeCache.txt file should be.
@@ -273,7 +295,6 @@ public:
   ///! Parse command line arguments that might set cache values
   bool SetCacheArgs(const std::vector<std::string>&);
 
-  using ProgressCallbackType = std::function<void(const char*, float)>;
   /**
    *  Set the function used by GUIs to receive progress updates
    *  Function gets passed: message as a const char*, a progress
@@ -311,8 +332,25 @@ public:
     return this->InstalledFiles;
   }
 
-  ///! Do all the checks before running configure
-  int DoPreConfigureChecks();
+
+    enum class PreConfigureCheckResult
+    {
+        Ok,
+        NoCMakeHomeDirectoryFound,
+        Error
+    };
+    ///! Do all the checks before running configure
+    PreConfigureCheckResult DoPreConfigureChecks();
+    bool InitializeGenerator();
+    bool GeneratorMatchesCachedGenerator();
+    void AddInitialCMakeHomeDirectoryCacheEntry();
+    void AddCMakeGeneratorCacheEntryIfNeeded();
+    bool GeneratorInstanceMatchesCached();
+    void AddCMakeGeneratorInstanceCacheEntryIfNeeded();
+    bool GeneratorPlatformMatchesCached();
+    void AddCMakeGeneratorPlatformCacheEntryIfNeeded();
+    bool GeneratorToolsetMatchesCached();
+    void AddCMakeGeneratorToolsetCacheEntryIfNeeded();
 
   void SetWorkingMode(WorkingMode mode) { this->CurrentWorkingMode = mode; }
   WorkingMode GetWorkingMode() { return this->CurrentWorkingMode; }
@@ -523,6 +561,9 @@ private:
   cmMessenger* Messenger;
 
   std::vector<std::string> TraceOnlyThisSources;
+
+  std::unique_ptr<ScriptExecutionStrategy> ScriptExecution;
+  ScriptExecutionStrategy* RawScriptExecution;
 
   void UpdateConversionPathTable();
 

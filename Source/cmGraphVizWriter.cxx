@@ -18,6 +18,7 @@
 #include "cmSystemTools.h"
 #include "cmTarget.h"
 #include "cmake.h"
+#include "ScriptExecutionStrategy.hpp"
 
 namespace {
 enum LinkLibraryScopeType
@@ -177,7 +178,7 @@ void cmGraphVizWriter::ReadSettings(const char* settingsFileName,
   cm.SetHomeDirectory("");
   cm.SetHomeOutputDirectory("");
   cm.GetCurrentSnapshot().SetDefaultDefinitions();
-  cmGlobalGenerator ggi(&cm);
+  cmGlobalGenerator ggi(&cm, nullptr);
   cmMakefile mf(&ggi, cm.GetCurrentSnapshot());
   std::unique_ptr<cmLocalGenerator> lg(ggi.CreateLocalGenerator(&mf));
 

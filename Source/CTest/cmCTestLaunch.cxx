@@ -615,7 +615,7 @@ void cmCTestLaunch::LoadConfig()
   cm.SetHomeDirectory("");
   cm.SetHomeOutputDirectory("");
   cm.GetCurrentSnapshot().SetDefaultDefinitions();
-  cmGlobalGenerator gg(&cm);
+  cmGlobalGenerator gg(&cm, nullptr);
   cmMakefile mf(&gg, cm.GetCurrentSnapshot());
   std::string fname = this->LogDir;
   fname += "CTestLaunchConfig.cmake";
