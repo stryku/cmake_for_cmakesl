@@ -5,6 +5,8 @@
 #include "cmVersion.h"
 #include "cmake.h"
 
+#include <iostream>
+
 CMakeFacade::CMakeFacade(cmMakefile& makefile)
   : m_makefile{ &makefile }
 {
@@ -16,8 +18,30 @@ cmsl::facade::cmake_facade::version CMakeFacade::get_cmake_version() const
            cmVersion::GetPatchVersion(), cmVersion::GetTweakVersion() };
 }
 
-void CMakeFacade::fatal_error(const std::string&) const
+void CMakeFacade::error(const std::string& what) const
 {
+    std::cerr<<what << "\n";
+}
+
+void CMakeFacade::warning(const std::string& what) const
+{
+    std::cerr<<what << "\n";
+}
+
+void CMakeFacade::message(const std::string& what) const
+{
+    std::cout<<what << "\n";
+}
+
+void CMakeFacade::fatal_error(const std::string& what)
+{
+    std::cerr<<what << "\n";
+    m_did_fatal_error_occure = true;
+}
+
+bool CMakeFacade::did_fatal_error_occure() const
+{
+    return m_did_fatal_error_occure;
 }
 
 void CMakeFacade::register_project(const std::string& name)
@@ -50,6 +74,7 @@ void CMakeFacade::add_library(const std::string& name,
 }
 
 void CMakeFacade::target_link_library(const std::string& target_name,
+                                      cmsl::facade::visibility v,
                                       const std::string& library_name)
 {
   auto target =
@@ -82,4 +107,40 @@ void CMakeFacade::go_into_subdirectory(const std::string& dir)
 void CMakeFacade::go_directory_up()
 {
   m_directories.pop_back();
+}
+
+void CMakeFacade::install(const std::string& target_name)
+{
+    // Todo: implement
+}
+
+void CMakeFacade::target_include_directories(
+  const std::string& target_name, cmsl::facade::visibility v,
+  const std::vector<std::string>& dirs)
+{
+    // Todo: implement
+}
+
+void CMakeFacade::enable_ctest() const
+{
+    // Todo: implement
+}
+
+void CMakeFacade::add_test(const std::string& test_executable_name)
+{
+    // Todo: implement
+}
+
+cmsl::facade::cmake_facade::cxx_compiler_info
+CMakeFacade::get_cxx_compiler_info() const
+{
+    // Todo: implement
+  return {};
+}
+
+std::optional<std::string> CMakeFacade::try_get_extern_define(
+  const std::string& name) const
+{
+    // Todo: implement
+  return std::nullopt;
 }
