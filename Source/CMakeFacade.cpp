@@ -154,7 +154,14 @@ cmsl::facade::cmake_facade::cxx_compiler_info
 CMakeFacade::get_cxx_compiler_info() const
 {
   // Todo: implement
-  return {};
+  cmsl::facade::cmake_facade::cxx_compiler_info info{};
+  const auto cxx_compiler_id =
+    m_makefile->GetDefinition("CMAKE_CXX_COMPILER_ID");
+  if (cxx_compiler_id == std::string{ "Clang" }) {
+    info.id = cmsl::facade::cmake_facade::cxx_compiler_id ::clang;
+  }
+
+  return info;
 }
 
 std::optional<std::string> CMakeFacade::try_get_extern_define(
