@@ -20,28 +20,28 @@ cmsl::facade::cmake_facade::version CMakeFacade::get_cmake_version() const
 
 void CMakeFacade::error(const std::string& what) const
 {
-    std::cerr<<what << "\n";
+  std::cerr << what << "\n";
 }
 
 void CMakeFacade::warning(const std::string& what) const
 {
-    std::cerr<<what << "\n";
+  std::cerr << what << "\n";
 }
 
 void CMakeFacade::message(const std::string& what) const
 {
-    std::cout<<what << "\n";
+  std::cout << what << "\n";
 }
 
 void CMakeFacade::fatal_error(const std::string& what)
 {
-    std::cerr<<what << "\n";
-    m_did_fatal_error_occure = true;
+  std::cerr << what << "\n";
+  m_did_fatal_error_occure = true;
 }
 
 bool CMakeFacade::did_fatal_error_occure() const
 {
-    return m_did_fatal_error_occure;
+  return m_did_fatal_error_occure;
 }
 
 void CMakeFacade::register_project(const std::string& name)
@@ -84,8 +84,17 @@ void CMakeFacade::target_link_library(const std::string& target_name,
     return;
   }
 
-  target->AddLinkLibrary(*m_makefile, library_name,
-                         cmTargetLinkLibraryType::GENERAL_LibraryType);
+  if (v == cmsl::facade::visibility::interface) {
+    target->AppendProperty(
+      "INTERFACE_LINK_LIBRARIES",
+      target
+        ->GetDebugGeneratorExpressions(
+          library_name, cmTargetLinkLibraryType::GENERAL_LibraryType)
+        .c_str());
+  } else {
+    target->AddLinkLibrary(*m_makefile, library_name,
+                           cmTargetLinkLibraryType::GENERAL_LibraryType);
+  }
 }
 
 std::string CMakeFacade::current_directory() const
@@ -111,36 +120,36 @@ void CMakeFacade::go_directory_up()
 
 void CMakeFacade::install(const std::string& target_name)
 {
-    // Todo: implement
+  // Todo: implement
 }
 
 void CMakeFacade::target_include_directories(
   const std::string& target_name, cmsl::facade::visibility v,
   const std::vector<std::string>& dirs)
 {
-    // Todo: implement
+  // Todo: implement
 }
 
 void CMakeFacade::enable_ctest() const
 {
-    // Todo: implement
+  // Todo: implement
 }
 
 void CMakeFacade::add_test(const std::string& test_executable_name)
 {
-    // Todo: implement
+  // Todo: implement
 }
 
 cmsl::facade::cmake_facade::cxx_compiler_info
 CMakeFacade::get_cxx_compiler_info() const
 {
-    // Todo: implement
+  // Todo: implement
   return {};
 }
 
 std::optional<std::string> CMakeFacade::try_get_extern_define(
   const std::string& name) const
 {
-    // Todo: implement
+  // Todo: implement
   return std::nullopt;
 }
