@@ -127,7 +127,17 @@ void CMakeFacade::target_include_directories(
   const std::string& target_name, cmsl::facade::visibility v,
   const std::vector<std::string>& dirs)
 {
-  // Todo: implement
+  auto target =
+    m_makefile->GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+      target_name);
+  const auto joined = join_paths(dirs);
+
+  if (v == cmsl::facade::visibility::interface) {
+    target->AppendProperty("INTERFACE_INCLUDE_DIRECTORIES", joined.c_str());
+  } else {
+    cmListFileBacktrace lfbt = m_makefile->GetBacktrace();
+    target->InsertInclude(joined, lfbt, /*before=*/false);
+  }
 }
 
 void CMakeFacade::enable_ctest() const
@@ -152,4 +162,22 @@ std::optional<std::string> CMakeFacade::try_get_extern_define(
 {
   // Todo: implement
   return std::nullopt;
+}
+
+std::string CMakeFacade::join_paths(
+  const std::vector<std::string>& paths) const
+{
+  std::string dirs;
+  std::string sep;
+  std::string prefix = m_makefile->GetCurrentSourceDirectory() + "/";
+  for (const auto& path : paths) {
+    if (cmSystemTools::FileIsFullPath(path) ||
+        cmGeneratorExpression::Find(path) == 0) {
+      dirs += sep + path;
+    } else {
+      dirs += sep + prefix + path;
+    }
+    sep = ";";
+  }
+  return dirs;
 }
