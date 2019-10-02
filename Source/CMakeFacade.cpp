@@ -198,7 +198,7 @@ void CMakeFacade::target_include_directories(
 
 void CMakeFacade::enable_ctest() const
 {
-  // Todo: implement
+  m_makefile->AddDefinition("CMAKE_TESTING_ENABLED", "1");
 }
 
 void CMakeFacade::add_test(const std::string& test_executable_name)
