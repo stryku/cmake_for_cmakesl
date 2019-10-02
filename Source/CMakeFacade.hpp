@@ -52,6 +52,14 @@ public:
   std::optional<std::string> try_get_extern_define(
     const std::string& name) const override;
 
+  void set_property(const std::string& property_name,
+                    const std::string& property_value) const override;
+
+  std::optional<bool> get_option_value(const std::string& name) const override;
+
+  void register_option(const std::string& name, const std::string& description,
+                       bool value) const override;
+
 private:
   std::string join_paths(const std::vector<std::string>& paths) const;
 

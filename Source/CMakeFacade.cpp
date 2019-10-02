@@ -244,3 +244,29 @@ std::string CMakeFacade::join_paths(
   }
   return dirs;
 }
+
+std::optional<bool> CMakeFacade::get_option_value(
+  const std::string& name) const
+{
+  const char* existingValue = m_makefile->GetState()->GetCacheEntryValue(name);
+
+  if (existingValue == nullptr) {
+    return std::nullopt;
+  }
+
+  return existingValue == std::string{ "ON" };
+}
+
+void CMakeFacade::register_option(const std::string& name,
+                                  const std::string& description,
+                                  bool value) const
+{
+  m_makefile->AddCacheDefinition(name, value ? "ON" : "OFF",
+                                 description.c_str(), cmStateEnums::BOOL);
+}
+
+void CMakeFacade::set_property(const std::string& property_name,
+                               const std::string& property_value) const
+{
+  m_makefile->AddDefinition(property_name, property_value.c_str());
+}
