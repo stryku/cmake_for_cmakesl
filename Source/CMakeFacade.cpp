@@ -1,5 +1,6 @@
 #include "CMakeFacade.hpp"
 
+#include "cmCustomCommandLines.h"
 #include "cmGlobalGenerator.h"
 #include "cmInstallCommandArguments.h"
 #include "cmInstallTargetGenerator.h"
@@ -91,6 +92,11 @@ std::string CMakeFacade::get_current_binary_dir() const
 std::string CMakeFacade::get_current_source_dir() const
 {
   return m_makefile->GetCurrentSourceDirectory();
+}
+
+std::string CMakeFacade::get_root_source_dir() const
+{
+  return get_current_source_dir();
 }
 
 void CMakeFacade::add_executable(const std::string& name,
@@ -268,5 +274,43 @@ void CMakeFacade::register_option(const std::string& name,
 void CMakeFacade::set_property(const std::string& property_name,
                                const std::string& property_value) const
 {
-  m_makefile->AddDefinition(property_name, property_value.c_str());
+  const auto adjusted_property =
+    adjust_property_to_cmake_interface(property_name, property_value);
+  m_makefile->AddDefinition(property_name, adjusted_property.c_str());
+}
+
+void CMakeFacade::add_custom_command(const std::vector<std::string>& command,
+                                     const std::string& output) const
+{
+  cmCustomCommandLines command_lines;
+  command_lines.push_back(cmCustomCommandLine{ command });
+
+  m_makefile->AddCustomCommandToOutput(output, {}, "", command_lines, nullptr,
+                                       "");
+}
+
+void CMakeFacade::make_directory(const std::string& dir) const
+{
+  cmSystemTools::MakeDirectory(dir);
+}
+
+std::string CMakeFacade::adjust_property_to_cmake_interface(
+  const std::string& name, std::string cmakesl_value) const
+{
+  if (name == "CMAKE_CXX_STANDARD") {
+    if (cmakesl_value == "cpp_11") {
+      return "11";
+    }
+    if (cmakesl_value == "cpp_14") {
+      return "14";
+    }
+    if (cmakesl_value == "cpp_17") {
+      return "17";
+    }
+    if (cmakesl_value == "cpp_20") {
+      return "20";
+    }
+  }
+
+  return std::move(cmakesl_value);
 }
