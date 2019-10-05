@@ -260,7 +260,7 @@ std::optional<bool> CMakeFacade::get_option_value(
     return std::nullopt;
   }
 
-  return existingValue == std::string{ "ON" };
+  return cmSystemTools::IsOn(existingValue);
 }
 
 void CMakeFacade::register_option(const std::string& name,
