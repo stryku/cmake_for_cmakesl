@@ -72,6 +72,9 @@ private:
   std::string adjust_property_to_cmake_interface(
     const std::string& name, std::string cmakesl_value) const;
 
+  std::vector<std::string> convert_to_full_paths(
+    std::vector<std::string> paths) const;
+
 private:
   cmMakefile* m_makefile;
   std::vector<std::string> m_directories;

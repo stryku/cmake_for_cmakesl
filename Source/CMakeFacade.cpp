@@ -102,14 +102,14 @@ std::string CMakeFacade::get_root_source_dir() const
 void CMakeFacade::add_executable(const std::string& name,
                                  const std::vector<std::string>& sources)
 {
-  m_makefile->AddExecutable(name, sources);
+  m_makefile->AddExecutable(name, convert_to_full_paths(sources));
 }
 
 void CMakeFacade::add_library(const std::string& name,
                               const std::vector<std::string>& sources)
 {
   m_makefile->AddLibrary(name, cmStateEnums::TargetType::STATIC_LIBRARY,
-                         sources);
+                         convert_to_full_paths(sources));
 }
 
 void CMakeFacade::target_link_library(const std::string& target_name,
@@ -313,4 +313,15 @@ std::string CMakeFacade::adjust_property_to_cmake_interface(
   }
 
   return std::move(cmakesl_value);
+}
+std::vector<std::string> CMakeFacade::convert_to_full_paths(
+  std::vector<std::string> paths) const
+{
+  for (auto& src : paths) {
+    if (!cmSystemTools::FileIsFullPath(src)) {
+      src = current_directory() + '/' + src;
+    }
+  }
+
+  return std::move(paths);
 }
