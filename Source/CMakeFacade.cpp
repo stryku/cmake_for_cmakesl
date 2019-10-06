@@ -81,6 +81,27 @@ bool CMakeFacade::did_fatal_error_occure() const
 void CMakeFacade::register_project(const std::string& name)
 {
   m_makefile->SetProjectName(name);
+
+  std::string bindir = name;
+  bindir += "_BINARY_DIR";
+  std::string srcdir = name;
+  srcdir += "_SOURCE_DIR";
+
+  m_makefile->AddCacheDefinition(
+    bindir, m_makefile->GetCurrentBinaryDirectory().c_str(),
+    "Value Computed by CMake", cmStateEnums::STATIC);
+  m_makefile->AddCacheDefinition(
+    srcdir, m_makefile->GetCurrentSourceDirectory().c_str(),
+    "Value Computed by CMake", cmStateEnums::STATIC);
+
+  bindir = "PROJECT_BINARY_DIR";
+  srcdir = "PROJECT_SOURCE_DIR";
+
+  m_makefile->AddDefinition(bindir,
+                            m_makefile->GetCurrentBinaryDirectory().c_str());
+  m_makefile->AddDefinition(srcdir,
+                            m_makefile->GetCurrentSourceDirectory().c_str());
+
   m_makefile->EnableLanguage(std::vector<std::string>{ "C", "CXX" }, false);
 }
 
@@ -205,6 +226,10 @@ void CMakeFacade::target_include_directories(
 void CMakeFacade::enable_ctest() const
 {
   m_makefile->AddDefinition("CMAKE_TESTING_ENABLED", "1");
+  const auto name = m_makefile->GetModulesFile("CTest.cmake");
+  std::string listFile = cmSystemTools::CollapseFullPath(
+    name, m_makefile->GetCurrentSourceDirectory());
+  m_makefile->ReadDependentFile(listFile, /*noPolicyScope=*/false);
 }
 
 void CMakeFacade::add_test(const std::string& test_executable_name)
