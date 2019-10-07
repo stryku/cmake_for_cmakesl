@@ -47,6 +47,7 @@ public:
     const std::vector<std::string>& dirs) override;
 
   std::string current_directory() const override;
+  void add_subdirectory_with_old_script(const std::string& dir) override;
   void go_into_subdirectory(const std::string& dir) override;
   void go_directory_up() override;
 

@@ -350,3 +350,68 @@ std::vector<std::string> CMakeFacade::convert_to_full_paths(
 
   return std::move(paths);
 }
+
+void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
+{
+  // Compute the full path to the specified source directory.
+  // Interpret a relative path with respect to the current source directory.
+  std::string srcPath;
+  if (cmSystemTools::FileIsFullPath(dir)) {
+    srcPath = dir;
+  } else {
+    srcPath = m_makefile->GetCurrentSourceDirectory();
+    srcPath += "/";
+    srcPath += dir;
+  }
+  if (!cmSystemTools::FileIsDirectory(srcPath)) {
+    /* Todo: Handle error
+    std::string error = "given source \"";
+    error += dir;
+    error += "\" which is not an existing directory.";
+    this->SetError(error);
+    return false;
+     */
+    return;
+  }
+  srcPath = cmSystemTools::CollapseFullPath(srcPath);
+
+  // Compute the full path to the binary directory.
+  std::string binPath;
+  // No binary directory was specified.  If the source directory is
+  // not a subdirectory of the current directory then it is an
+  // error.
+  if (!cmSystemTools::IsSubDirectory(
+        srcPath, m_makefile->GetCurrentSourceDirectory())) {
+    /* Todo: Handle error
+    std::ostringstream e;
+    e << "not given a binary directory but the given source directory "
+      << "\"" << srcPath << "\" is not a subdirectory of \""
+      << m_makefile->GetCurrentSourceDirectory() << "\".  "
+      << "When specifying an out-of-tree source a binary directory "
+      << "must be explicitly specified.";
+    this->SetError(e.str());
+    return false;
+     */
+    return;
+  }
+
+  // Remove the CurrentDirectory from the srcPath and replace it
+  // with the CurrentOutputDirectory.
+  const std::string& src = m_makefile->GetCurrentSourceDirectory();
+  const std::string& bin = m_makefile->GetCurrentBinaryDirectory();
+  size_t srcLen = src.length();
+  size_t binLen = bin.length();
+  if (srcLen > 0 && src.back() == '/') {
+    --srcLen;
+  }
+  if (binLen > 0 && bin.back() == '/') {
+    --binLen;
+  }
+  binPath = bin.substr(0, binLen) + srcPath.substr(srcLen);
+
+  binPath = cmSystemTools::CollapseFullPath(binPath);
+
+  // Add the subdirectory using the computed full paths.
+  m_makefile->AddSubDirectory(srcPath, binPath, /*excludeFromAll=*/false,
+                              true);
+}
