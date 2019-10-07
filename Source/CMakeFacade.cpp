@@ -415,3 +415,9 @@ void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
   m_makefile->AddSubDirectory(srcPath, binPath, /*excludeFromAll=*/false,
                               true);
 }
+
+void CMakeFacade::set_old_style_variable(const std::string& name,
+                                         const std::string& value) const
+{
+  m_makefile->AddDefinition(name, value.c_str());
+}

@@ -68,6 +68,9 @@ public:
   void register_option(const std::string& name, const std::string& description,
                        bool value) const override;
 
+  void set_old_style_variable(const std::string& name,
+                              const std::string& value) const override;
+
 private:
   std::string join_paths(const std::vector<std::string>& paths) const;
   std::string adjust_property_to_cmake_interface(
