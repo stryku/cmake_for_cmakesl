@@ -20,7 +20,8 @@ public:
   void fatal_error(const std::string& what) override;
   bool did_fatal_error_occure() const override;
 
-  void install(const std::string& target_name) override;
+  void install(const std::string& target_name,
+               const std::string& destination) override;
 
   void register_project(const std::string& name) override;
 
@@ -30,6 +31,10 @@ public:
 
   void add_custom_command(const std::vector<std::string>& command,
                           const std::string& output) const override;
+
+  void add_custom_target(
+    const std::string& name,
+    const std::vector<std::string>& command) const override;
 
   void make_directory(const std::string& dir) const override;
 
@@ -56,6 +61,7 @@ public:
   void add_test(const std::string& test_executable_name) override;
 
   cxx_compiler_info get_cxx_compiler_info() const override;
+  system_info get_system_info() const override;
 
   std::optional<std::string> try_get_extern_define(
     const std::string& name) const override;

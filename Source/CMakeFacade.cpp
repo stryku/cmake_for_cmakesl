@@ -7,8 +7,11 @@
 #include "cmMakefile.h"
 #include "cmVersion.h"
 #include "cmake.h"
+#include "cmsys/SystemInformation.hxx"
 
+#include <algorithm>
 #include <iostream>
+#include <iterator>
 
 namespace {
 cmInstallTargetGenerator* CreateInstallTargetGenerator(
@@ -178,7 +181,8 @@ void CMakeFacade::go_directory_up()
   m_directories.pop_back();
 }
 
-void CMakeFacade::install(const std::string& target_name)
+void CMakeFacade::install(const std::string& target_name,
+                          const std::string& destination)
 {
   m_makefile->GetGlobalGenerator()->EnableInstallTarget();
 
@@ -199,8 +203,8 @@ void CMakeFacade::install(const std::string& target_name)
   const auto message =
     cmInstallGenerator::SelectMessageLevel(target->GetMakefile());
   auto generator = new cmInstallTargetGenerator(
-    target->GetName(), "bin", false, "", {}, "Unspecified", message, false,
-    false, m_makefile->GetBacktrace());
+    target->GetName(), destination.c_str(), false, "", {}, "Unspecified",
+    message, false, false, m_makefile->GetBacktrace());
 
   m_makefile->AddInstallGenerator(generator);
   m_makefile->GetGlobalGenerator()->AddInstallComponent("Unspecified");
@@ -420,4 +424,36 @@ void CMakeFacade::set_old_style_variable(const std::string& name,
                                          const std::string& value) const
 {
   m_makefile->AddDefinition(name, value.c_str());
+}
+
+cmsl::facade::cmake_facade::system_info CMakeFacade::get_system_info() const
+{
+  cmsys::SystemInformation info;
+
+  const auto id = info.GetOSIsWindows()
+    ? cmsl::facade::cmake_facade::system_id::windows
+    : cmsl::facade::cmake_facade::system_id ::unix_;
+
+  return cmsl::facade::cmake_facade::system_info{ .id = id };
+}
+
+void CMakeFacade::add_custom_target(
+  const std::string& name, const std::vector<std::string>& command) const
+{
+  cmCustomCommandLine line;
+  std::copy(std::cbegin(command), std::cend(command),
+            std::back_inserter(line));
+
+  // Save all command lines.
+  cmCustomCommandLines commandLines;
+  commandLines.push_back(std::move(line));
+
+  auto target = m_makefile->AddUtilityCommand(
+    name, cmMakefile::TargetOrigin::Project, /*excludeFromAll=*/false,
+    /*working_directory=*/"", /*byproducts=*/{}, /*depends=*/{}, commandLines,
+    /*escapeOldStyle=*/false, /*comment=*/"", /*uses_terminal=*/false,
+    /*command_expand_lists=*/false);
+
+  // Todo: uncomment when accepting sources is implemented.
+  //  target->AddSources(sources);
 }
