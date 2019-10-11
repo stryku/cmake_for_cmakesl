@@ -227,6 +227,34 @@ void CMakeFacade::target_include_directories(
   }
 }
 
+std::string CMakeFacade::join_for_compile_definitions(
+  const std::vector<std::string>& content) const
+{
+  std::string defs;
+  std::string sep;
+  for (std::string const& it : content) {
+    if (cmHasLiteralPrefix(it, "-D")) {
+      defs += sep + it.substr(2);
+    } else {
+      defs += sep + it;
+    }
+    sep = ";";
+  }
+  return defs;
+}
+
+void CMakeFacade::target_compile_definitions(
+  const std::string& target_name, cmsl::facade::visibility v,
+  const std::vector<std::string>& definitions)
+{
+  auto target =
+    m_makefile->GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+      target_name);
+  const auto joined = join_for_compile_definitions(definitions);
+
+  target->AppendProperty("COMPILE_DEFINITIONS", joined.c_str());
+}
+
 void CMakeFacade::enable_ctest() const
 {
   m_makefile->AddDefinition("CMAKE_TESTING_ENABLED", "1");
@@ -456,4 +484,14 @@ void CMakeFacade::add_custom_target(
 
   // Todo: uncomment when accepting sources is implemented.
   //  target->AddSources(sources);
+}
+
+std::string CMakeFacade::ctest_command() const
+{
+  return m_makefile->GetDefinition("CMAKE_CTEST_COMMAND");
+}
+
+std::string CMakeFacade::get_old_style_variable(const std::string& name) const
+{
+  return m_makefile->GetDefinition(name);
 }

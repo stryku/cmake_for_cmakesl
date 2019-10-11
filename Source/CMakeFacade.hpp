@@ -51,6 +51,10 @@ public:
     const std::string& target_name, cmsl::facade::visibility v,
     const std::vector<std::string>& dirs) override;
 
+  void target_compile_definitions(
+    const std::string& target_name, cmsl::facade::visibility v,
+    const std::vector<std::string>& definitions) override;
+
   std::string current_directory() const override;
   void add_subdirectory_with_old_script(const std::string& dir) override;
   void go_into_subdirectory(const std::string& dir) override;
@@ -77,8 +81,14 @@ public:
   void set_old_style_variable(const std::string& name,
                               const std::string& value) const override;
 
+  std::string get_old_style_variable(const std::string& name) const override;
+
+  std::string ctest_command() const override;
+
 private:
   std::string join_paths(const std::vector<std::string>& paths) const;
+  std::string join_for_compile_definitions(
+    const std::vector<std::string>& content) const;
   std::string adjust_property_to_cmake_interface(
     const std::string& name, std::string cmakesl_value) const;
 
