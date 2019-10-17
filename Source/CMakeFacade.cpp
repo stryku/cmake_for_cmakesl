@@ -5,6 +5,8 @@
 #include "cmInstallCommandArguments.h"
 #include "cmInstallTargetGenerator.h"
 #include "cmMakefile.h"
+#include "cmTest.h"
+#include "cmTestGenerator.h"
 #include "cmVersion.h"
 #include "cmake.h"
 #include "cmsys/SystemInformation.hxx"
@@ -266,13 +268,34 @@ void CMakeFacade::enable_ctest() const
 
 void CMakeFacade::add_test(const std::string& test_executable_name)
 {
-  // Todo: implement
+  // Collect the command with arguments.
+  std::vector<std::string> command{ test_executable_name };
+
+  // Create the test but add a generator only the first time it is
+  // seen.  This preserves behavior from before test generators.
+  cmTest* test = m_makefile->GetTest(test_executable_name);
+  if (test) {
+    // If the test was already added by a new-style signature do not
+    // allow it to be duplicated.
+    if (!test->GetOldStyle()) {
+      std::ostringstream e;
+      e << " given test name \"" << test_executable_name
+        << "\" which already exists in this directory.";
+      fatal_error(e.str());
+      return;
+    }
+  } else {
+    test = m_makefile->CreateTest(test_executable_name);
+    test->SetOldStyle(true);
+    m_makefile->AddTestGenerator(new cmTestGenerator(test));
+  }
+  
+  test->SetCommand(command);
 }
 
 cmsl::facade::cmake_facade::cxx_compiler_info
 CMakeFacade::get_cxx_compiler_info() const
 {
-  // Todo: implement
   cmsl::facade::cmake_facade::cxx_compiler_info info{};
   const auto cxx_compiler_id =
     m_makefile->GetDefinition("CMAKE_CXX_COMPILER_ID");
