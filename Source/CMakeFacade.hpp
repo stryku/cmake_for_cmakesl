@@ -2,6 +2,7 @@
 
 #include "cmake_facade.hpp"
 
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,7 @@ class CMakeFacade : public cmsl::facade::cmake_facade
 {
 public:
   explicit CMakeFacade(cmMakefile& makefile);
+  ~CMakeFacade();
 
   version get_cmake_version() const override;
 
@@ -60,6 +62,10 @@ public:
   void go_into_subdirectory(const std::string& dir) override;
   void go_directory_up() override;
 
+  void prepare_for_add_subdirectory_with_cmakesl_script(
+    const std::string& dir) override;
+  void finalize_after_add_subdirectory_with_cmakesl_script() override;
+
   void enable_ctest() const override;
 
   void add_test(const std::string& test_executable_name) override;
@@ -95,8 +101,12 @@ private:
   std::vector<std::string> convert_to_full_paths(
     std::vector<std::string> paths) const;
 
+  cmMakefile& makefile();
+  cmMakefile& makefile() const;
+
 private:
-  cmMakefile* m_makefile;
+  std::stack<cmMakefile*> m_makefiles;
   std::vector<std::string> m_directories;
+  std::unique_ptr<cmsl::exec::inst::instance> m_add_subdirectory_result;
   bool m_did_fatal_error_occure{ false };
 };

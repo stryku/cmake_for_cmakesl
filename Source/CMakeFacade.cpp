@@ -11,6 +11,8 @@
 #include "cmake.h"
 #include "cmsys/SystemInformation.hxx"
 
+#include "exec/instance/instance.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <iterator>
@@ -45,9 +47,11 @@ cmInstallTargetGenerator* CreateInstallTargetGenerator(
 }
 
 CMakeFacade::CMakeFacade(cmMakefile& makefile)
-  : m_makefile{ &makefile }
 {
+  m_makefiles.push(&makefile);
 }
+
+CMakeFacade::~CMakeFacade() = default;
 
 cmsl::facade::cmake_facade::version CMakeFacade::get_cmake_version() const
 {
@@ -85,39 +89,39 @@ bool CMakeFacade::did_fatal_error_occure() const
 
 void CMakeFacade::register_project(const std::string& name)
 {
-  m_makefile->SetProjectName(name);
+  makefile().SetProjectName(name);
 
   std::string bindir = name;
   bindir += "_BINARY_DIR";
   std::string srcdir = name;
   srcdir += "_SOURCE_DIR";
 
-  m_makefile->AddCacheDefinition(
-    bindir, m_makefile->GetCurrentBinaryDirectory().c_str(),
+  makefile().AddCacheDefinition(
+    bindir, makefile().GetCurrentBinaryDirectory().c_str(),
     "Value Computed by CMake", cmStateEnums::STATIC);
-  m_makefile->AddCacheDefinition(
-    srcdir, m_makefile->GetCurrentSourceDirectory().c_str(),
+  makefile().AddCacheDefinition(
+    srcdir, makefile().GetCurrentSourceDirectory().c_str(),
     "Value Computed by CMake", cmStateEnums::STATIC);
 
   bindir = "PROJECT_BINARY_DIR";
   srcdir = "PROJECT_SOURCE_DIR";
 
-  m_makefile->AddDefinition(bindir,
-                            m_makefile->GetCurrentBinaryDirectory().c_str());
-  m_makefile->AddDefinition(srcdir,
-                            m_makefile->GetCurrentSourceDirectory().c_str());
+  makefile().AddDefinition(bindir,
+                           makefile().GetCurrentBinaryDirectory().c_str());
+  makefile().AddDefinition(srcdir,
+                           makefile().GetCurrentSourceDirectory().c_str());
 
-  m_makefile->EnableLanguage(std::vector<std::string>{ "C", "CXX" }, false);
+  makefile().EnableLanguage(std::vector<std::string>{ "C", "CXX" }, false);
 }
 
 std::string CMakeFacade::get_current_binary_dir() const
 {
-  return m_makefile->GetCurrentBinaryDirectory();
+  return makefile().GetCurrentBinaryDirectory();
 }
 
 std::string CMakeFacade::get_current_source_dir() const
 {
-  return m_makefile->GetCurrentSourceDirectory();
+  return makefile().GetCurrentSourceDirectory();
 }
 
 std::string CMakeFacade::get_root_source_dir() const
@@ -128,14 +132,14 @@ std::string CMakeFacade::get_root_source_dir() const
 void CMakeFacade::add_executable(const std::string& name,
                                  const std::vector<std::string>& sources)
 {
-  m_makefile->AddExecutable(name, convert_to_full_paths(sources));
+  makefile().AddExecutable(name, convert_to_full_paths(sources));
 }
 
 void CMakeFacade::add_library(const std::string& name,
                               const std::vector<std::string>& sources)
 {
-  m_makefile->AddLibrary(name, cmStateEnums::TargetType::STATIC_LIBRARY,
-                         convert_to_full_paths(sources));
+  makefile().AddLibrary(name, cmStateEnums::TargetType::STATIC_LIBRARY,
+                        convert_to_full_paths(sources));
 }
 
 void CMakeFacade::target_link_library(const std::string& target_name,
@@ -143,7 +147,7 @@ void CMakeFacade::target_link_library(const std::string& target_name,
                                       const std::string& library_name)
 {
   auto target =
-    m_makefile->GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+    makefile().GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
       target_name);
   if (target == nullptr) {
     return;
@@ -157,13 +161,15 @@ void CMakeFacade::target_link_library(const std::string& target_name,
           library_name, cmTargetLinkLibraryType::GENERAL_LibraryType)
         .c_str());
   } else {
-    target->AddLinkLibrary(*m_makefile, library_name,
+    target->AddLinkLibrary(makefile(), library_name,
                            cmTargetLinkLibraryType::GENERAL_LibraryType);
   }
 }
 
 std::string CMakeFacade::current_directory() const
 {
+  return makefile().GetCurrentSourceDirectory();
+
   std::string result;
   std::string separator;
   for (const auto& dir : m_directories) {
@@ -175,23 +181,24 @@ std::string CMakeFacade::current_directory() const
 
 void CMakeFacade::go_into_subdirectory(const std::string& dir)
 {
-  m_directories.emplace_back(dir);
+  //  m_directories.emplace_back(dir);
 }
 
 void CMakeFacade::go_directory_up()
 {
-  m_directories.pop_back();
+  //  m_directories.pop_back();
+  m_makefiles.pop();
 }
 
 void CMakeFacade::install(const std::string& target_name,
                           const std::string& destination)
 {
-  m_makefile->GetGlobalGenerator()->EnableInstallTarget();
+  makefile().GetGlobalGenerator()->EnableInstallTarget();
 
-  cmTarget* target = m_makefile->FindLocalNonAliasTarget(target_name);
+  cmTarget* target = makefile().FindLocalNonAliasTarget(target_name);
   if (!target) {
     cmTarget* const global_target =
-      m_makefile->GetGlobalGenerator()->FindTarget(target_name, true);
+      makefile().GetGlobalGenerator()->FindTarget(target_name, true);
     if (global_target && !global_target->IsImported()) {
       target = global_target;
     }
@@ -206,10 +213,10 @@ void CMakeFacade::install(const std::string& target_name,
     cmInstallGenerator::SelectMessageLevel(target->GetMakefile());
   auto generator = new cmInstallTargetGenerator(
     target->GetName(), destination.c_str(), false, "", {}, "Unspecified",
-    message, false, false, m_makefile->GetBacktrace());
+    message, false, false, makefile().GetBacktrace());
 
-  m_makefile->AddInstallGenerator(generator);
-  m_makefile->GetGlobalGenerator()->AddInstallComponent("Unspecified");
+  makefile().AddInstallGenerator(generator);
+  makefile().GetGlobalGenerator()->AddInstallComponent("Unspecified");
 }
 
 void CMakeFacade::target_include_directories(
@@ -217,14 +224,14 @@ void CMakeFacade::target_include_directories(
   const std::vector<std::string>& dirs)
 {
   auto target =
-    m_makefile->GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+    makefile().GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
       target_name);
   const auto joined = join_paths(dirs);
 
   if (v == cmsl::facade::visibility::interface) {
     target->AppendProperty("INTERFACE_INCLUDE_DIRECTORIES", joined.c_str());
   } else {
-    cmListFileBacktrace lfbt = m_makefile->GetBacktrace();
+    cmListFileBacktrace lfbt = makefile().GetBacktrace();
     target->InsertInclude(joined, lfbt, /*before=*/false);
   }
 }
@@ -250,7 +257,7 @@ void CMakeFacade::target_compile_definitions(
   const std::vector<std::string>& definitions)
 {
   auto target =
-    m_makefile->GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+    makefile().GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
       target_name);
   const auto joined = join_for_compile_definitions(definitions);
 
@@ -259,11 +266,11 @@ void CMakeFacade::target_compile_definitions(
 
 void CMakeFacade::enable_ctest() const
 {
-  m_makefile->AddDefinition("CMAKE_TESTING_ENABLED", "1");
-  const auto name = m_makefile->GetModulesFile("CTest.cmake");
+  makefile().AddDefinition("CMAKE_TESTING_ENABLED", "1");
+  const auto name = makefile().GetModulesFile("CTest.cmake");
   std::string listFile = cmSystemTools::CollapseFullPath(
-    name, m_makefile->GetCurrentSourceDirectory());
-  m_makefile->ReadDependentFile(listFile, /*noPolicyScope=*/false);
+    name, makefile().GetCurrentSourceDirectory());
+  makefile().ReadDependentFile(listFile, /*noPolicyScope=*/false);
 }
 
 void CMakeFacade::add_test(const std::string& test_executable_name)
@@ -273,7 +280,7 @@ void CMakeFacade::add_test(const std::string& test_executable_name)
 
   // Create the test but add a generator only the first time it is
   // seen.  This preserves behavior from before test generators.
-  cmTest* test = m_makefile->GetTest(test_executable_name);
+  cmTest* test = makefile().GetTest(test_executable_name);
   if (test) {
     // If the test was already added by a new-style signature do not
     // allow it to be duplicated.
@@ -285,11 +292,11 @@ void CMakeFacade::add_test(const std::string& test_executable_name)
       return;
     }
   } else {
-    test = m_makefile->CreateTest(test_executable_name);
+    test = makefile().CreateTest(test_executable_name);
     test->SetOldStyle(true);
-    m_makefile->AddTestGenerator(new cmTestGenerator(test));
+    makefile().AddTestGenerator(new cmTestGenerator(test));
   }
-  
+
   test->SetCommand(command);
 }
 
@@ -298,7 +305,7 @@ CMakeFacade::get_cxx_compiler_info() const
 {
   cmsl::facade::cmake_facade::cxx_compiler_info info{};
   const auto cxx_compiler_id =
-    m_makefile->GetDefinition("CMAKE_CXX_COMPILER_ID");
+    makefile().GetDefinition("CMAKE_CXX_COMPILER_ID");
   if (cxx_compiler_id == std::string{ "Clang" }) {
     info.id = cmsl::facade::cmake_facade::cxx_compiler_id ::clang;
   }
@@ -318,7 +325,7 @@ std::string CMakeFacade::join_paths(
 {
   std::string dirs;
   std::string sep;
-  std::string prefix = m_makefile->GetCurrentSourceDirectory() + "/";
+  std::string prefix = makefile().GetCurrentSourceDirectory() + "/";
   for (const auto& path : paths) {
     if (cmSystemTools::FileIsFullPath(path) ||
         cmGeneratorExpression::Find(path) == 0) {
@@ -334,7 +341,7 @@ std::string CMakeFacade::join_paths(
 std::optional<bool> CMakeFacade::get_option_value(
   const std::string& name) const
 {
-  const char* existingValue = m_makefile->GetState()->GetCacheEntryValue(name);
+  const char* existingValue = makefile().GetState()->GetCacheEntryValue(name);
 
   if (existingValue == nullptr) {
     return std::nullopt;
@@ -347,8 +354,8 @@ void CMakeFacade::register_option(const std::string& name,
                                   const std::string& description,
                                   bool value) const
 {
-  m_makefile->AddCacheDefinition(name, value ? "ON" : "OFF",
-                                 description.c_str(), cmStateEnums::BOOL);
+  makefile().AddCacheDefinition(name, value ? "ON" : "OFF",
+                                description.c_str(), cmStateEnums::BOOL);
 }
 
 void CMakeFacade::set_property(const std::string& property_name,
@@ -356,7 +363,7 @@ void CMakeFacade::set_property(const std::string& property_name,
 {
   const auto adjusted_property =
     adjust_property_to_cmake_interface(property_name, property_value);
-  m_makefile->AddDefinition(property_name, adjusted_property.c_str());
+  makefile().AddDefinition(property_name, adjusted_property.c_str());
 }
 
 void CMakeFacade::add_custom_command(const std::vector<std::string>& command,
@@ -365,8 +372,8 @@ void CMakeFacade::add_custom_command(const std::vector<std::string>& command,
   cmCustomCommandLines command_lines;
   command_lines.push_back(cmCustomCommandLine{ command });
 
-  m_makefile->AddCustomCommandToOutput(output, {}, "", command_lines, nullptr,
-                                       "");
+  makefile().AddCustomCommandToOutput(output, {}, "", command_lines, nullptr,
+                                      "");
 }
 
 void CMakeFacade::make_directory(const std::string& dir) const
@@ -414,7 +421,7 @@ void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
   if (cmSystemTools::FileIsFullPath(dir)) {
     srcPath = dir;
   } else {
-    srcPath = m_makefile->GetCurrentSourceDirectory();
+    srcPath = makefile().GetCurrentSourceDirectory();
     srcPath += "/";
     srcPath += dir;
   }
@@ -435,13 +442,13 @@ void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
   // No binary directory was specified.  If the source directory is
   // not a subdirectory of the current directory then it is an
   // error.
-  if (!cmSystemTools::IsSubDirectory(
-        srcPath, m_makefile->GetCurrentSourceDirectory())) {
+  if (!cmSystemTools::IsSubDirectory(srcPath,
+                                     makefile().GetCurrentSourceDirectory())) {
     /* Todo: Handle error
     std::ostringstream e;
     e << "not given a binary directory but the given source directory "
       << "\"" << srcPath << "\" is not a subdirectory of \""
-      << m_makefile->GetCurrentSourceDirectory() << "\".  "
+      << makefile().GetCurrentSourceDirectory() << "\".  "
       << "When specifying an out-of-tree source a binary directory "
       << "must be explicitly specified.";
     this->SetError(e.str());
@@ -452,8 +459,8 @@ void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
 
   // Remove the CurrentDirectory from the srcPath and replace it
   // with the CurrentOutputDirectory.
-  const std::string& src = m_makefile->GetCurrentSourceDirectory();
-  const std::string& bin = m_makefile->GetCurrentBinaryDirectory();
+  const std::string& src = makefile().GetCurrentSourceDirectory();
+  const std::string& bin = makefile().GetCurrentBinaryDirectory();
   size_t srcLen = src.length();
   size_t binLen = bin.length();
   if (srcLen > 0 && src.back() == '/') {
@@ -467,14 +474,13 @@ void CMakeFacade::add_subdirectory_with_old_script(const std::string& dir)
   binPath = cmSystemTools::CollapseFullPath(binPath);
 
   // Add the subdirectory using the computed full paths.
-  m_makefile->AddSubDirectory(srcPath, binPath, /*excludeFromAll=*/false,
-                              true);
+  makefile().AddSubDirectory(srcPath, binPath, /*excludeFromAll=*/false, true);
 }
 
 void CMakeFacade::set_old_style_variable(const std::string& name,
                                          const std::string& value) const
 {
-  m_makefile->AddDefinition(name, value.c_str());
+  makefile().AddDefinition(name, value.c_str());
 }
 
 cmsl::facade::cmake_facade::system_info CMakeFacade::get_system_info() const
@@ -499,10 +505,10 @@ void CMakeFacade::add_custom_target(
   cmCustomCommandLines commandLines;
   commandLines.push_back(std::move(line));
 
-  auto target = m_makefile->AddUtilityCommand(
-    name, cmMakefile::TargetOrigin::Project, /*excludeFromAll=*/false,
+  auto target = makefile().AddUtilityCommand(
+    name, cmMakefile::TargetOrigin::Project, /*excludeFromAll=*/true,
     /*working_directory=*/"", /*byproducts=*/{}, /*depends=*/{}, commandLines,
-    /*escapeOldStyle=*/false, /*comment=*/"", /*uses_terminal=*/false,
+    /*escapeOldStyle=*/true, /*comment=*/"", /*uses_terminal=*/false,
     /*command_expand_lists=*/false);
 
   // Todo: uncomment when accepting sources is implemented.
@@ -511,10 +517,71 @@ void CMakeFacade::add_custom_target(
 
 std::string CMakeFacade::ctest_command() const
 {
-  return m_makefile->GetDefinition("CMAKE_CTEST_COMMAND");
+  return makefile().GetDefinition("CMAKE_CTEST_COMMAND");
 }
 
 std::string CMakeFacade::get_old_style_variable(const std::string& name) const
 {
-  return m_makefile->GetDefinition(name);
+  return makefile().GetDefinition(name);
+}
+
+cmMakefile& CMakeFacade::makefile()
+{
+  return *m_makefiles.top();
+}
+
+cmMakefile& CMakeFacade::makefile() const
+{
+  return *m_makefiles.top();
+}
+
+void CMakeFacade::prepare_for_add_subdirectory_with_cmakesl_script(
+  const std::string& dir)
+{
+
+  // This is basically copied from cmAddSubdirectoryCommand. Maybe it could be
+  // extracted to a common function.
+
+  std::string binPath;
+  // No binary directory was specified.  If the source directory is
+  // not a subdirectory of the current directory then it is an
+  // error.
+  auto srcDir = makefile().GetCurrentSourceDirectory() + '/' + dir;
+  if (!cmSystemTools::IsSubDirectory(srcDir,
+                                     makefile().GetCurrentSourceDirectory())) {
+    std::ostringstream e;
+    e << "not given a binary directory but the given source directory "
+      << "\"" << srcDir << "\" is not a subdirectory of \""
+      << makefile().GetCurrentSourceDirectory() << "\".  "
+      << "When specifying an out-of-tree source a binary directory "
+      << "must be explicitly specified.";
+    fatal_error(e.str());
+    return;
+  }
+
+  // Remove the CurrentDirectory from the srcPath and replace it
+  // with the CurrentOutputDirectory.
+  const std::string& src = makefile().GetCurrentSourceDirectory();
+  const std::string& bin = makefile().GetCurrentBinaryDirectory();
+  size_t srcLen = src.length();
+  size_t binLen = bin.length();
+  if (srcLen > 0 && src.back() == '/') {
+    --srcLen;
+  }
+  if (binLen > 0 && bin.back() == '/') {
+    --binLen;
+  }
+  binPath = bin.substr(0, binLen) + srcDir.substr(srcLen);
+  binPath = cmSystemTools::CollapseFullPath(binPath);
+
+  auto new_makefile = makefile().CreateMakefileForAddSubdirectory(
+    srcDir, binPath, /*excludeFromAll=*/false);
+  new_makefile->InitializeFromParent(&makefile());
+
+  m_makefiles.push(new_makefile);
+}
+
+void CMakeFacade::finalize_after_add_subdirectory_with_cmakesl_script()
+{
+  m_makefiles.pop();
 }

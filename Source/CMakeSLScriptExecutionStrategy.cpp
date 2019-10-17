@@ -33,6 +33,7 @@ int CMakeSLScriptExecutionStrategy::execute(cmGlobalGenerator& globalGenerator,
   cmsl::exec::global_executor executor{
     snapshot.GetState()->GetSourceDirectory(), facade
   };
+
   const auto result = executor.execute(str);
 
   if (facade.did_fatal_error_occure()) {
