@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <utility>
 
+#include "OldScriptExecutionStrategy.hpp"
 #include "cmAlgorithms.h"
 #include "cmCommand.h"
 #include "cmCommandArgumentParserHelper.h"
@@ -44,7 +45,6 @@
 #include "cmWorkingDirectory.h"
 #include "cm_sys_stat.h"
 #include "cmake.h"
-#include "OldScriptExecutionStrategy.hpp"
 
 #include "cmConfigure.h" // IWYU pragma: keep
 
@@ -1626,25 +1626,26 @@ void cmMakefile::ConfigureSubDirectory(cmMakefile* mf)
     cmSystemTools::Message(msg);
   }
 
+  std::string const cmakeslStartFile = currentStart + "/CMakeLists.cmsl";
   std::string const currentStartFile = currentStart + "/CMakeLists.txt";
   if (!cmSystemTools::FileExists(currentStartFile, true)) {
     // The file is missing.  Check policy CMP0014.
     std::ostringstream e;
     /* clang-format off */
-    e << "The source directory\n"
-      << "  " << currentStart << "\n"
-      << "does not contain a CMakeLists.txt file.";
+  e << "The source directory\n"
+    << "  " << currentStart << "\n"
+    << "does not contain a CMakeLists.txt file.";
     /* clang-format on */
     switch (this->GetPolicyStatus(cmPolicies::CMP0014)) {
       case cmPolicies::WARN:
         // Print the warning.
         /* clang-format off */
-        e << "\n"
-          << "CMake does not support this case but it used "
-          << "to work accidentally and is being allowed for "
-          << "compatibility."
-          << "\n"
-          << cmPolicies::GetPolicyWarning(cmPolicies::CMP0014);
+      e << "\n"
+        << "CMake does not support this case but it used "
+        << "to work accidentally and is being allowed for "
+        << "compatibility."
+        << "\n"
+        << cmPolicies::GetPolicyWarning(cmPolicies::CMP0014);
         /* clang-format on */
         this->IssueMessage(MessageType::AUTHOR_WARNING, e.str());
       case cmPolicies::OLD:
@@ -1702,6 +1703,32 @@ void cmMakefile::AddSubDirectory(const std::string& srcPath,
 
   this->AddInstallGenerator(new cmInstallSubdirectoryGenerator(
     subMf, binPath.c_str(), excludeFromAll));
+}
+
+cmMakefile* cmMakefile::CreateMakefileForAddSubdirectory(const std::string& fullSrcDir,
+                                                         const std::string& fullBinDir, bool excludeFromAll)
+{
+  // Make sure the binary directory is unique.
+  if (!this->EnforceUniqueDir(fullSrcDir, fullBinDir)) {
+    return nullptr;
+  }
+
+  cmStateSnapshot newSnapshot =
+    this->GetState()->CreateBuildsystemDirectorySnapshot(this->StateSnapshot);
+
+  newSnapshot.GetDirectory().SetCurrentSource(fullSrcDir);
+  newSnapshot.GetDirectory().SetCurrentBinary(fullBinDir);
+
+  cmSystemTools::MakeDirectory(fullBinDir);
+
+  cmMakefile* subMf = new cmMakefile(this->GlobalGenerator, newSnapshot);
+  this->GetGlobalGenerator()->AddMakefile(subMf);
+
+  if (excludeFromAll || this->GetPropertyAsBool("EXCLUDE_FROM_ALL")) {
+    subMf->SetProperty("EXCLUDE_FROM_ALL", "TRUE");
+  }
+
+  return subMf;
 }
 
 const std::string& cmMakefile::GetCurrentSourceDirectory() const
@@ -3412,10 +3439,10 @@ int cmMakefile::TryCompile(const std::string& srcdir,
   // make sure the same generator is used
   // use this program as the cmake to be run, it should not
   // be run that way but the cmake object requires a vailid path
-    OldScriptExecutionStrategy scriptExecutionStrategy;
+  OldScriptExecutionStrategy scriptExecutionStrategy;
   cmake cm(cmake::RoleProject, cmState::Project);
   cm.SetIsInTryCompile(true);
-    cm.SetScriptExecution(&scriptExecutionStrategy);
+  cm.SetScriptExecution(&scriptExecutionStrategy);
   cmGlobalGenerator* gg =
     cm.CreateGlobalGenerator(this->GetGlobalGenerator()->GetName());
   if (!gg) {

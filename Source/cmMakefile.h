@@ -48,6 +48,10 @@ class cmTestGenerator;
 class cmVariableWatch;
 class cmake;
 
+namespace cmsl::facade {
+class add_subdirectory_with_cmakesl_executor;
+}
+
 /** A type-safe wrapper for a string representing a directory id.  */
 class cmDirectoryId
 {
@@ -238,6 +242,10 @@ public:
   void AddSubDirectory(const std::string& fullSrcDir,
                        const std::string& fullBinDir, bool excludeFromAll,
                        bool immediate);
+
+  cmMakefile* CreateMakefileForAddSubdirectory(const std::string& fullSrcDir,
+                                               const std::string& fullBinDir,
+                                               bool excludeFromAll);
 
   void Configure();
 
@@ -1046,6 +1054,9 @@ private:
   std::set<std::string> WarnedCMP0074;
   bool IsSourceFileTryCompile;
   mutable bool SuppressSideEffects;
+  cmsl::facade::add_subdirectory_with_cmakesl_executor* AddSubdirectoryFacade{
+    nullptr
+  };
 };
 
 #endif
