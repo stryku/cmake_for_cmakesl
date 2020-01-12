@@ -264,6 +264,18 @@ void CMakeFacade::target_compile_definitions(
   target->AppendProperty("COMPILE_DEFINITIONS", joined.c_str());
 }
 
+void CMakeFacade::target_compile_options(
+  const std::string& target_name, cmsl::facade::visibility v,
+  const std::vector<std::string>& options)
+{
+  auto target =
+    makefile().GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+      target_name);
+  const auto joined = join_for_compile_definitions(options);
+
+  target->AppendProperty("COMPILE_OPTIONS", joined.c_str());
+}
+
 void CMakeFacade::enable_ctest() const
 {
   makefile().AddDefinition("CMAKE_TESTING_ENABLED", "1");

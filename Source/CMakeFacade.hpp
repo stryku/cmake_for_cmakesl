@@ -57,6 +57,10 @@ public:
     const std::string& target_name, cmsl::facade::visibility v,
     const std::vector<std::string>& definitions) override;
 
+  void target_compile_options(
+    const std::string& target_name, cmsl::facade::visibility v,
+    const std::vector<std::string>& options) override;
+
   std::string current_directory() const override;
   void add_subdirectory_with_old_script(const std::string& dir) override;
   void go_into_subdirectory(const std::string& dir) override;
