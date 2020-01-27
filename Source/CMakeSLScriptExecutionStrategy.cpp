@@ -30,8 +30,10 @@ int CMakeSLScriptExecutionStrategy::execute(cmGlobalGenerator& globalGenerator,
 
   CMakeFacade facade{ *dirMf };
 
+  cmsl::errors::errors_observer errs{ &facade };
+
   cmsl::exec::global_executor executor{
-    snapshot.GetState()->GetSourceDirectory(), facade
+    snapshot.GetState()->GetSourceDirectory(), facade, errs
   };
 
   const auto result = executor.execute(str);

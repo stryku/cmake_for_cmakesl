@@ -276,6 +276,18 @@ void CMakeFacade::target_compile_options(
   target->AppendProperty("COMPILE_OPTIONS", joined.c_str());
 }
 
+void CMakeFacade::target_sources(const std::string& target_name,
+                                 cmsl::facade::visibility v,
+                                 const std::vector<std::string>& sources)
+{
+  auto target =
+    makefile().GetCMakeInstance()->GetGlobalGenerator()->FindTarget(
+      target_name);
+  const auto joined = join_for_compile_definitions(sources);
+
+  target->AppendProperty("SOURCES", joined.c_str());
+}
+
 void CMakeFacade::enable_ctest() const
 {
   makefile().AddDefinition("CMAKE_TESTING_ENABLED", "1");
@@ -532,9 +544,11 @@ std::string CMakeFacade::ctest_command() const
   return makefile().GetDefinition("CMAKE_CTEST_COMMAND");
 }
 
-std::string CMakeFacade::get_old_style_variable(const std::string& name) const
+std::optional<std::string> CMakeFacade::get_old_style_variable(
+  const std::string& name) const
 {
-  return makefile().GetDefinition(name);
+  const auto value = makefile().GetDefinition(name);
+  return value ? std::optional{ std::string{ value } } : std::nullopt;
 }
 
 cmMakefile& CMakeFacade::makefile()
