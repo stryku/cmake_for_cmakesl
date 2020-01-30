@@ -15,15 +15,6 @@
 int CMakeSLScriptExecutionStrategy::execute(cmGlobalGenerator& globalGenerator,
                                             cmStateSnapshot& snapshot)
 {
-  const auto rootSourceFile =
-    snapshot.GetState()->GetSourceDirectory() + "/CMakeLists.cmsl";
-
-  std::ifstream t(rootSourceFile);
-  std::string str((std::istreambuf_iterator<char>(t)),
-                  std::istreambuf_iterator<char>());
-
-  t.close();
-
   cmMakefile* dirMf = new cmMakefile(&globalGenerator, snapshot);
   globalGenerator.AddMakefile(dirMf);
   globalGenerator.IndexMakefile(dirMf);
@@ -36,8 +27,7 @@ int CMakeSLScriptExecutionStrategy::execute(cmGlobalGenerator& globalGenerator,
     snapshot.GetState()->GetSourceDirectory(), facade, errs
   };
 
-  const auto result = executor.execute(str);
-
+  const auto result = executor.execute_based_on_root_path();
   if (facade.did_fatal_error_occure()) {
     return 1;
   }

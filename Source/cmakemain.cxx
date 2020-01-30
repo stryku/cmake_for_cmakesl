@@ -1,6 +1,8 @@
 /* Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
    file Copyright.txt or https://cmake.org/licensing for details.  */
 
+#include "CMakeSLScriptExecutionStrategy.hpp"
+#include "OldScriptExecutionStrategy.hpp"
 #include "cmAlgorithms.h"
 #include "cmDocumentationEntry.h" // IWYU pragma: keep
 #include "cmGlobalGenerator.h"
@@ -10,8 +12,6 @@
 #include "cmSystemTools.h"
 #include "cmake.h"
 #include "cmcmd.h"
-#include "OldScriptExecutionStrategy.hpp"
-#include "CMakeSLScriptExecutionStrategy.hpp"
 
 #ifdef CMAKE_BUILD_WITH_CMAKE
 #  include "cmDocumentation.h"
@@ -169,10 +169,11 @@ static void cmakemainProgressCallback(const char* m, float prog, cmake* cm)
   std::cout.flush();
 }
 
-std::unique_ptr<ScriptExecutionStrategy> createScriptExecution(const std::string& sourcePath)
+std::unique_ptr<ScriptExecutionStrategy> createScriptExecution(
+  const std::string& sourcePath)
 {
-  if(cmSystemTools::FileExists(sourcePath + "/CMakeLists.cmsl"))
-  {
+  if (cmSystemTools::FileExists(sourcePath + "/CMakeLists.cmsl") ||
+      cmSystemTools::FileExists(sourcePath + "/CMakeLists.dcmsl")) {
     return std::make_unique<CMakeSLScriptExecutionStrategy>();
   }
 
@@ -330,9 +331,15 @@ int do_cmake(int ac, char const* const* av)
   }
 
   const auto sourceDir = args[1];
-  cmake cm{ role, mode, "", "", [&cm](const char* msg, float prog) {
-    cmakemainProgressCallback(msg, prog, &cm);
-  }, workingMode, createScriptExecution(sourceDir) };
+  cmake cm{ role,
+            mode,
+            "",
+            "",
+            [&cm](const char* msg, float prog) {
+              cmakemainProgressCallback(msg, prog, &cm);
+            },
+            workingMode,
+            createScriptExecution(sourceDir) };
 
   cmSystemTools::SetMessageCallback([&cm](const char* msg, const char* title) {
     cmakemainMessageCallback(msg, title, &cm);
@@ -340,42 +347,45 @@ int do_cmake(int ac, char const* const* av)
 
   const auto res = cm.Execute(args);
 
-//  TODO stryku: should be fixed later
-//  cm.SetHomeDirectory("");
-//  cm.SetHomeOutputDirectory("");
-//  cmSystemTools::SetMessageCallback([&cm](const char* msg, const char* title) {
-//    cmakemainMessageCallback(msg, title, &cm);
-//  });
-//  cm.SetProgressCallback([&cm](const char* msg, float prog) {
-//    cmakemainProgressCallback(msg, prog, &cm);
-//  });
-//  cm.SetWorkingMode(workingMode);
-//
-//  int res = cm.Run(args, view_only);
-//  if (list_cached || list_all_cached) {
-//    std::cout << "-- Cache values" << std::endl;
-//    std::vector<std::string> keys = cm.GetState()->GetCacheEntryKeys();
-//    for (std::string const& k : keys) {
-//      cmStateEnums::CacheEntryType t = cm.GetState()->GetCacheEntryType(k);
-//      if (t != cmStateEnums::INTERNAL && t != cmStateEnums::STATIC &&
-//          t != cmStateEnums::UNINITIALIZED) {
-//        const char* advancedProp =
-//          cm.GetState()->GetCacheEntryProperty(k, "ADVANCED");
-//        if (list_all_cached || !advancedProp) {
-//          if (list_help) {
-//            std::cout << "// "
-//                      << cm.GetState()->GetCacheEntryProperty(k, "HELPSTRING")
-//                      << std::endl;
-//          }
-//          std::cout << k << ":" << cmState::CacheEntryTypeToString(t) << "="
-//                    << cm.GetState()->GetCacheEntryValue(k) << std::endl;
-//          if (list_help) {
-//            std::cout << std::endl;
-//          }
-//        }
-//      }
-//    }
-//  }
+  //  TODO stryku: should be fixed later
+  //  cm.SetHomeDirectory("");
+  //  cm.SetHomeOutputDirectory("");
+  //  cmSystemTools::SetMessageCallback([&cm](const char* msg, const char*
+  //  title) {
+  //    cmakemainMessageCallback(msg, title, &cm);
+  //  });
+  //  cm.SetProgressCallback([&cm](const char* msg, float prog) {
+  //    cmakemainProgressCallback(msg, prog, &cm);
+  //  });
+  //  cm.SetWorkingMode(workingMode);
+  //
+  //  int res = cm.Run(args, view_only);
+  //  if (list_cached || list_all_cached) {
+  //    std::cout << "-- Cache values" << std::endl;
+  //    std::vector<std::string> keys = cm.GetState()->GetCacheEntryKeys();
+  //    for (std::string const& k : keys) {
+  //      cmStateEnums::CacheEntryType t = cm.GetState()->GetCacheEntryType(k);
+  //      if (t != cmStateEnums::INTERNAL && t != cmStateEnums::STATIC &&
+  //          t != cmStateEnums::UNINITIALIZED) {
+  //        const char* advancedProp =
+  //          cm.GetState()->GetCacheEntryProperty(k, "ADVANCED");
+  //        if (list_all_cached || !advancedProp) {
+  //          if (list_help) {
+  //            std::cout << "// "
+  //                      << cm.GetState()->GetCacheEntryProperty(k,
+  //                      "HELPSTRING")
+  //                      << std::endl;
+  //          }
+  //          std::cout << k << ":" << cmState::CacheEntryTypeToString(t) <<
+  //          "="
+  //                    << cm.GetState()->GetCacheEntryValue(k) << std::endl;
+  //          if (list_help) {
+  //            std::cout << std::endl;
+  //          }
+  //        }
+  //      }
+  //    }
+  //  }
 
   // Always return a non-negative value.  Windows tools do not always
   // interpret negative return values as errors.
